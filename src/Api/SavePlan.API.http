@@ -1,0 +1,6 @@
+@SavePlan.API_HostAddress = http://localhost:5274
+
+GET {{SavePlan.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
