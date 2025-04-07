@@ -1,7 +1,8 @@
 using Carter;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using SavePlan.API;
+using SavePlan.API.Identity;
 using SavePlan.API.Infrastructure;
 using SavePlan.API.Middlewares;
 using Serilog;
@@ -48,23 +49,49 @@ builder.Services.AddApplication();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddTransient<RequestLogContextMiddleware>();
-builder.Services.AddAuthorization();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(o =>
-    {
-        o.RequireHttpsMetadata = false;
-        o.Audience = builder.Configuration["Authentication:Audience"];
-        o.MetadataAddress = builder.Configuration["Authentication:MetadataAddress"]!;
 
-        o.TokenValidationParameters = new TokenValidationParameters
+builder.Services.AddAntiforgery(options => 
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
+
+
+var corsNamePolicy = "AllowFrontendApplication";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: corsNamePolicy, 
+        policy =>
         {
-            ValidIssuer = builder.Configuration["Authentication:ValidIssuer"],
-        };
-    });
+            policy.WithOrigins("http://localhost:4200")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+});
 
+// Identity services
+builder.Services.AddAuthorization();
+builder.Services.AddAuthentication()
+    .AddCookie(IdentityConstants.ApplicationScheme);
 
-var serilog = builder.Configuration.GetSection("Serilog");
-var database = builder.Configuration.GetConnectionString("Database");
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.ExpireTimeSpan = TimeSpan.FromDays(15);
+    options.Cookie.SameSite = SameSiteMode.Lax;
+});
+
+builder.Services.AddDbContext<IdentityDbContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Database"));
+});
+
+builder.Services.AddIdentityCore<User>()
+    .AddEntityFrameworkStores<IdentityDbContext>()
+    .AddApiEndpoints();
 
 var app = builder.Build();
 
@@ -75,20 +102,26 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UsePathBase("/api");
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
+app.UseCors(corsNamePolicy);
+
+app.MapIdentityApi<User>()
+    .DisableAntiforgery();
+
+app.UsePathBase("/api");
+
 app.UseMiddleware<RequestLogContextMiddleware>();
+
+app.UseSerilogRequestLogging();
 
 app.MapCarter();
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
-app.UseSerilogRequestLogging();
-
-app.UseExceptionHandler();
+app.UseAntiforgery();
 
 app.Run();

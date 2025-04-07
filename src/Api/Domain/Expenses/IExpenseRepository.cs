@@ -2,7 +2,9 @@
 
 public interface IExpenseRepository
 {
-    Task InsertAsync(Expense expense);  
+    void Insert(Expense expense);  
 
     Task<Expense?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    void Update(Expense expense);   
 }

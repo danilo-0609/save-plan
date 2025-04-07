@@ -28,8 +28,13 @@ public sealed class CacheExpenseRepository : IExpenseRepository
         });
     }
 
-    public async Task InsertAsync(Expense expense)
+    public void Insert(Expense expense)
     {
-        await _decorated.InsertAsync(expense);
+        _decorated.Insert(expense);
+    }
+
+    public void Update(Expense expense)
+    {
+        _decorated.Update(expense);
     }
 }

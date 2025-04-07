@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using SavePlan.API.Common;
 using SavePlan.API.Requests.Expenses;
+using System.Security.Claims;
 
 namespace SavePlan.API.Features.Expenses.GetExpenseById;
 
@@ -20,7 +21,8 @@ public sealed class GetExpenseEndpoint : CarterModule
     public override void AddRoutes(IEndpointRouteBuilder app)
     {
         app.MapGet("/{id}", async (Guid id,
-             [FromServices] ISender sender) =>
+             [FromServices] ISender sender,
+             ClaimsPrincipal claimsPrincipal) =>
         {
             var query = new GetExpenseByIdQuery(id);
 

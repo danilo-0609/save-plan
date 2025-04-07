@@ -20,8 +20,13 @@ public sealed class ExpenseRepository : IExpenseRepository
             .SingleOrDefaultAsync(cancellationToken);
     }
 
-    public async Task InsertAsync(Expense expense)
+    public void Insert(Expense expense)
     {
-        await _dbContext.Expenses.AddAsync(expense);
+        _dbContext.Expenses.Add(expense);
+    }
+
+    public void Update(Expense expense)
+    {
+        _dbContext.Expenses.Update(expense);
     }
 }

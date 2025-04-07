@@ -26,7 +26,7 @@ public sealed class CreateExpenseCommandHandler : IRequestHandler<CreateExpenseC
             userId,
             DateTime.Now);
     
-        await _expenseRepository.InsertAsync(expense);
+        _expenseRepository.Insert(expense);
 
         return expense.Id;
     }
